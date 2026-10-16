@@ -46,6 +46,16 @@ _Avoid_: Athlete
 The list of Players registered for a Team.
 _Avoid_: Squad list, lineup
 
+## Stats
+
+**Box score**:
+A Player's stats in one Match. Every League maps onto a shared core (Sets played, Points, Attack points, Aces, Blocks, Errors); its other columns stay League-specific stats.
+_Avoid_: Match stats, scoresheet
+
+**Season totals**:
+A Player's Box scores of one Season added up; percentages come from the summed attempts, never from averaging per-Match percentages.
+_Avoid_: Season average, career stats
+
 ## Movement
 
 **Transfer**:
