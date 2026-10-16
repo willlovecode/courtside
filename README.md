@@ -43,12 +43,22 @@ Each League has one adapter with four separate steps:
 3. **load** upserts into Postgres.
 4. **check** runs plausibility rules: every Team has a Roster of at least 12 Players, every finished Match has 3 to 5 valid sets (25 points with a 2-point margin, 15 in the fifth), and the Match count fits the League's format.
 
+Per League, as of October 2026:
+
+- **Poland** (tauronliga.pl): plain HTML. Season 2025-26 is tour 52. Season stats exist only as one page per Player, fetched a few seconds apart.
+- **Japan** (svleague.jp): plain HTML, season selector `s=2025`. No published Season stats, so Season totals are summed from Box scores.
+- **Italy** (legavolley.it): the 2025-26 archive is still to be located, possibly through the site's own data requests.
+- **Germany** (volleyball-bundesliga.de): rendered with Playwright; plain requests return an empty SAMS shell.
+- **Turkey**: out of the MVP, see ADR 0001.
+
+Every mapping of a League's columns onto the shared Box score core is tested against a real page.
+
 Runs start by hand from the command line while we work on the finished 2025-26 Season. Scheduled GitHub Actions runs, which open an issue when a check fails, come with the live Season. Parsers are tested with Vitest against a few real pages per page type committed to the repo.
 
 ## MVP is done when
 
 - The site is live on a `*.vercel.app` address.
-- At least four of the five Leagues have their 2025-26 Season complete: every Match with set scores, final Standings per Phase, Rosters, Club and Player pages.
+- Poland, Italy, Japan and Germany each have one Season complete: every Match with set scores, final Standings per Phase, Rosters, Club and Player pages. That Season is 2025-26, except for Italy if its site no longer serves 2025-26, in which case Italy counts with 2026-27. Turkey is out of the MVP (see ADR 0001).
 - The summer 2026 Transfers are listed.
 - `npm run check` (lint, types, tests, build) passes and the health checks pass for every loaded League.
 
