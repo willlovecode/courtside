@@ -30,6 +30,7 @@ function match(id: string, home: string, away: string, sets: CheckSet[], extra: 
   };
 }
 
+const teamsOf = (ids: string[]) => ids.map((id) => ({ id, name: id.toUpperCase(), rosterSize: 12 }));
 const threeZero = [set(1, 25, 20), set(2, 25, 22), set(3, 25, 23)];
 const season = (matches: CheckMatch[], overrides: Partial<CheckSeason> = {}): CheckSeason => ({
   label: "2025-26",
@@ -96,6 +97,12 @@ describe("matchSetsRule", () => {
     expect(result.findings.map((f) => f.message)).toEqual(["Match m1: set 1 ended 25:24"]);
   });
 
+  it("flags a set played after one side already had 3 sets", () => {
+    const sets = [set(1, 25, 20), set(2, 25, 20), set(3, 25, 20), set(4, 20, 25)];
+    const result = matchSetsRule(season([match("m1", "a", "b", sets)]));
+    expect(result.findings.map((f) => f.message)).toContain("Match m1: set 4 was played after the Match was decided");
+  });
+
   it("flags a fifth set played to 25", () => {
     const sets = [set(1, 25, 20), set(2, 20, 25), set(3, 25, 20), set(4, 20, 25), set(5, 25, 20)];
     expect(matchSetsRule(season([match("m1", "a", "b", sets)])).findings).toHaveLength(1);
@@ -126,12 +133,26 @@ describe("regularSeasonFormatRule", () => {
   const phases = [{ id: "p", kind: "regular", name: "Regular season", roundCount: 6 }];
 
   it("accepts a complete double round robin", () => {
-    expect(regularSeasonFormatRule(season(full, { phases })).findings).toEqual([]);
+    expect(regularSeasonFormatRule(season(full, { phases, teams: teamsOf(four) })).findings).toEqual([]);
   });
 
   it("flags a missing Match", () => {
-    const result = regularSeasonFormatRule(season(full.slice(1), { phases }));
+    const result = regularSeasonFormatRule(season(full.slice(1), { phases, teams: teamsOf(four) }));
     expect(result.findings.some((f) => f.message.includes("11 Matches, expected 4 Teams x 6 Rounds / 2 = 12"))).toBe(true);
+  });
+
+  it("counts Teams from the Season, so a Team that plays no Match is a gap", () => {
+    // Four Teams are registered, but the Matches only cover a, b and c: 6 of the 12 Matches.
+    const three = ["a", "b", "c"];
+    const only = three.flatMap((h) => three.filter((a) => a !== h).map((a) => [h, a] as const));
+    const matches = only.map(([h, a], i) => match(`m${i}`, h, a, threeZero, { roundId: `r${Math.floor(i / 2) + 1}` }));
+    const result = regularSeasonFormatRule(season(matches, { phases, teams: teamsOf(four) }));
+    expect(result.findings.some((f) => f.message.includes("6 Matches, expected 4 Teams x 6 Rounds / 2 = 12"))).toBe(true);
+  });
+
+  it("flags a Match between Teams the Season does not have", () => {
+    const result = regularSeasonFormatRule(season(full, { phases, teams: teamsOf(["a", "b", "c"]) }));
+    expect(result.findings.some((f) => f.message.includes("is not in the Season"))).toBe(true);
   });
 
   it("derives 182 Matches from 14 Teams and 26 Rounds", () => {
@@ -139,7 +160,9 @@ describe("regularSeasonFormatRule", () => {
     const all = teams.flatMap((h) => teams.filter((a) => a !== h).map((a) => [h, a] as const));
     expect(all).toHaveLength(182);
     const matches = all.map(([h, a], i) => match(`m${i}`, h, a, threeZero, { roundId: `r${(i % 26) + 1}` }));
-    const result = regularSeasonFormatRule(season(matches, { phases: [{ id: "p", kind: "regular", name: "R", roundCount: 26 }] }));
+    const result = regularSeasonFormatRule(
+      season(matches, { teams: teamsOf(teams), phases: [{ id: "p", kind: "regular", name: "R", roundCount: 26 }] }),
+    );
     // Round sizes are uneven in this synthetic layout; only the totals matter here.
     expect(result.findings.some((f) => f.message.includes("Matches, expected 14 Teams"))).toBe(false);
     expect(result.findings.some((f) => f.message.includes("Rounds, expected"))).toBe(false);

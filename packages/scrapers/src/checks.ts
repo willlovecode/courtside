@@ -96,13 +96,17 @@ export function matchSetsRule(season: CheckSeason): RuleResult {
   for (const match of season.matches.filter((m) => m.status === "finished")) {
     const sets = [...match.sets].sort((a, b) => a.setNumber - b.setNumber);
     if (sets.length < 3 || sets.length > 5) fail(match, `${sets.length} sets, expected 3 to 5`);
+    let home = 0;
+    let away = 0;
     sets.forEach((set, i) => {
       if (set.setNumber !== i + 1) fail(match, `set numbers are not 1..${sets.length}`);
       if (!isValidSet(set)) fail(match, `set ${set.setNumber} ended ${set.homePoints}:${set.awayPoints}`);
+      // The last set must decide the Match: nobody may have 3 sets before it.
+      if (home === 3 || away === 3) fail(match, `set ${set.setNumber} was played after the Match was decided`);
+      if (set.homePoints > set.awayPoints) home++;
+      else away++;
     });
 
-    const home = sets.filter((s) => s.homePoints > s.awayPoints).length;
-    const away = sets.length - home;
     if (home !== match.homeSetsWon || away !== match.awaySetsWon) {
       fail(match, `set scores give ${home}:${away} but the Match says ${match.homeSetsWon}:${match.awaySetsWon}`);
     }
@@ -111,7 +115,7 @@ export function matchSetsRule(season: CheckSeason): RuleResult {
   return { rule: `${season.label}: finished Matches have 3-5 valid sets and the winner won 3`, findings };
 }
 
-/** The first Phase of kind "regular" is a double round robin. */
+/** The first Phase of kind "regular" is a double round robin among the Season's Teams. */
 export function regularSeasonFormatRule(season: CheckSeason): RuleResult {
   const findings: Finding[] = [];
   const phase = season.phases.find((p) => p.kind === "regular");
@@ -119,8 +123,14 @@ export function regularSeasonFormatRule(season: CheckSeason): RuleResult {
   if (!phase) return { rule, findings: [{ level: "fail", message: "no regular season Phase" }] };
 
   const matches = season.matches.filter((m) => m.phaseId === phase.id);
-  const teamIds = new Set(matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]));
+  // The number of Teams comes from the Season, so a Team missing from every Match shows up as a gap.
+  const teamIds = new Set(season.teams.map((t) => t.id));
   const teams = teamIds.size;
+  for (const m of matches) {
+    for (const id of [m.homeTeamId, m.awayTeamId]) {
+      if (!teamIds.has(id)) findings.push({ level: "fail", message: `Match ${m.id} has a Team (${id}) that is not in the Season` });
+    }
+  }
   const rounds = 2 * (teams - 1);
   const expected = (teams * rounds) / 2;
   if (matches.length !== expected) {
