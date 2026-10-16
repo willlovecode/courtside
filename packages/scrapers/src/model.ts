@@ -17,6 +17,8 @@ export interface ParsedLeague {
   players: ParsedPlayer[];
   seasons: ParsedSeason[];
   sourceRefs: ParsedSourceRef[];
+  /** Pages or rows parse could not use. Not stored; the check step reports them. */
+  warnings: string[];
 }
 
 export interface ParsedClub {
