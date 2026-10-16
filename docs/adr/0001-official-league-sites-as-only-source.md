@@ -13,3 +13,4 @@ All match, standing, club and player data is scraped from each league's own webs
 - Each league needs its own adapter; a site redesign breaks that league until the adapter is fixed, so every run is health-checked and raw pages are kept as snapshots so parsers can be re-run without refetching.
 - Some sites render data client-side (Germany, Japan, Turkey via Volleystation) and need a headless browser.
 - Fetch politely: a few runs a day, honest user agent, link back to the source.
+- If a site blocks polite fetching, that League is dropped rather than worked around. Turkey, served through Volleystation, is the likeliest case.

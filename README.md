@@ -11,6 +11,15 @@ Independent, non-commercial fan project. All data comes from the leagues' offici
 - Site language is English.
 - No live scores yet: data refreshes a few times a day.
 
+## Order of work
+
+1. Throwaway clickable prototype of Home, League and Match pages on mock data, to settle the look.
+2. League scrapers in this order: Poland, Italy, Japan, Germany, Turkey.
+3. Transfers detected from Roster changes.
+4. Later: news (headline, summary, link), women's leagues, live scores.
+
+Raw fetched pages and club logos are stored in Cloudflare R2, not in git.
+
 ## Docs
 
 - `GLOSSARY.md`: the domain language.
