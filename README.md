@@ -45,7 +45,7 @@ Each League has one adapter with four separate steps:
 
 Per League, as of October 2026:
 
-- **Poland** (tauronliga.pl): plain HTML. Season 2025-26 is tour 52. Season stats exist only as one page per Player, fetched a few seconds apart.
+- **Poland** (tauronliga.pl): plain HTML, using the `nocookies/1` URL variants. Season 2025-26 is tour 52, 2026-27 is tour 53. Match pages carry sets and facts; their per-player stats are an embedded Volleystation widget (blocked), so Box scores come from each Player's page, which lists one row per Match. A Player who left mid-season and is on no final Roster is therefore missing. No nationality is published.
 - **Japan** (svleague.jp): plain HTML, season selector `s=2025`. No published Season stats, so Season totals are summed from Box scores.
 - **Italy** (legavolley.it): the 2025-26 archive is still to be located, possibly through the site's own data requests.
 - **Germany** (volleyball-bundesliga.de): rendered with Playwright; plain requests return an empty SAMS shell.
