@@ -84,7 +84,12 @@ async function main(): Promise<number> {
     const handle = openDatabase();
     try {
       await handle.migrate();
-      const report = await checkSeasons(handle.db, adapter.id, adapter.seasonsFor(season));
+      // Warnings come from the last parse; without one, only the database is checked.
+      const parsed = await readFile(parsedPath(adapter.id, season), "utf8")
+        .then((text) => JSON.parse(text) as ParsedLeague)
+        .catch(() => null);
+      if (!parsed) log("no parse output found, skipping the parse warnings");
+      const report = await checkSeasons(handle.db, adapter.id, adapter.seasonsFor(season), parsed?.warnings ?? undefined);
       console.log(formatReport(report));
       if (report.failures > 0) return 1;
     } finally {

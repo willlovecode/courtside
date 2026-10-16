@@ -63,7 +63,20 @@ export interface CheckReport {
   warnings: number;
 }
 
-export async function checkSeasons(db: Database, leagueId: string, labels: string[]): Promise<CheckReport> {
+/** What parse could not use (pages missing, Box score rows that fit no Match) becomes warnings. */
+export function parseWarningsRule(warnings: string[]): RuleResult {
+  return {
+    rule: "parse: every page and Box score row could be used",
+    findings: warnings.map((message) => ({ level: "warn" as const, message })),
+  };
+}
+
+export async function checkSeasons(
+  db: Database,
+  leagueId: string,
+  labels: string[],
+  parseWarnings?: string[],
+): Promise<CheckReport> {
   const results: RuleResult[] = [];
   for (const label of labels) {
     const season = await readSeasonForChecks(db, leagueId, label);
@@ -73,6 +86,7 @@ export async function checkSeasons(db: Database, leagueId: string, labels: strin
     }
     results.push(...runRules(season));
   }
+  if (parseWarnings) results.push(parseWarningsRule(parseWarnings));
   const count = (level: "fail" | "warn") =>
     results.reduce((n, r) => n + r.findings.filter((f) => f.level === level).length, 0);
   return { results, failures: count("fail"), warnings: count("warn") };

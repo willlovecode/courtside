@@ -15,6 +15,7 @@ import type {
 import { slugify } from "../slug";
 import { localDateString, localToUtc, parseDotDateTime } from "../time";
 import { mapBoxScore } from "./boxScore";
+import { resolveBoxScoreSide } from "./boxScoreSide";
 import { clubForSiteId, leagueId, pageKinds, publicUrls, seasonLabelOnSite, siteOrigin, timeZone } from "./config";
 import { parseMatchList, type ListedMatch } from "./matchList";
 import { parseMatchPage, type MatchPage } from "./matchPage";
@@ -28,9 +29,8 @@ import { parseTeamIndex, parseTeamPage, type TeamPage } from "./teamPage";
 export const seasonId = (label: string) => `${leagueId}-${label}`;
 export const playerId = (siteId: string) => `${leagueId}-p${siteId}`;
 export const matchId = (siteId: string) => `${leagueId}-m${siteId}`;
-export const teamId = (clubSlug: string, label: string) => `${clubSlug}-${label}`;
-
-const normaliseName = (name: string) => name.replace(/\s+/g, " ").trim().toLowerCase();
+export const clubId = (clubSlug: string) => `${leagueId}-${clubSlug}`;
+export const teamId = (clubSlug: string, label: string) => `${clubId(clubSlug)}-${label}`;
 
 function isoDate(dotDate: string | undefined): string | null {
   const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dotDate ?? "");
@@ -54,6 +54,12 @@ export async function buildPlusLiga(
   if (!plan) throw new Error(`No plan for PlusLiga ${season}`);
   const mainTour = await tourOf(store, season);
   const sourceRefs: ParsedSourceRef[] = [];
+  // Things parse could not use. They travel with the parsed data so the check step can report them.
+  const warnings: string[] = [];
+  const warn = (message: string) => {
+    warnings.push(message);
+    log(`warning: ${message}`);
+  };
   const clubs = new Map<string, ParsedClub>();
 
   // Teams and Rosters of every Season in the plan.
@@ -65,7 +71,7 @@ export async function buildPlusLiga(
     for (const siteId of parseTeamIndex(indexHtml)) {
       const page = parseTeamPage(await requirePage(store, snapshotKey(label, pageKinds.team, siteId)));
       const known = clubForSiteId(siteId);
-      const club: ParsedClub = { id: known.slug, slug: known.slug, name: known.name };
+      const club: ParsedClub = { id: clubId(known.slug), slug: known.slug, name: known.name };
       clubs.set(club.id, club);
       const team: ParsedTeam = {
         id: teamId(club.slug, label),
@@ -91,7 +97,7 @@ export async function buildPlusLiga(
   const matchPages = new Map<string, MatchPage>();
   for (const m of listed) {
     const html = await readPage(store, snapshotKey(season, pageKinds.match, m.siteId));
-    if (html === null) log(`warning: no usable page for Match ${m.siteId}`);
+    if (html === null) warn(`no usable page for Match ${m.siteId}`);
     else matchPages.set(m.siteId, parseMatchPage(html));
   }
 
@@ -115,20 +121,17 @@ export async function buildPlusLiga(
         break;
       }
     }
-    if (!playerPages.has(siteId)) log(`warning: no usable page for Player ${siteId} (${playerNames.get(siteId)})`);
+    if (!playerPages.has(siteId)) warn(`no usable page for Player ${siteId} (${playerNames.get(siteId)})`);
   }
 
   const players: ParsedPlayer[] = [];
-  const usedSlugs = new Set<string>();
   for (const siteId of [...playerNames.keys()].sort((a, b) => Number(a) - Number(b))) {
     const page = playerPages.get(siteId);
     const fullName = page?.name || playerNames.get(siteId) || siteId;
-    let slug = slugify(fullName);
-    if (usedSlugs.has(slug)) slug = `${slug}-${siteId}`;
-    usedSlugs.add(slug);
     players.push({
       id: playerId(siteId),
-      slug,
+      // The loader makes slugs unique across Leagues and keeps those already stored.
+      slug: slugify(fullName),
       fullName,
       birthDate: isoDate(page?.birthDate ?? undefined),
       heightCm: page?.heightCm ?? null,
@@ -146,10 +149,14 @@ export async function buildPlusLiga(
   const mainSeasonId = seasonId(season);
   const regularId = `${mainSeasonId}-regular`;
   const playoffsId = `${mainSeasonId}-playoffs`;
+  const placementId = `${mainSeasonId}-placement`;
   const regular: ParsedPhase = { id: regularId, kind: "regular", name: "Regular season", position: 1, rounds: [] };
   const playoffs: ParsedPhase = { id: playoffsId, kind: "playoffs", name: "Play-off", position: 2, rounds: [] };
+  const placement: ParsedPhase = { id: placementId, kind: "placement", name: "Placement matches", position: 3, rounds: [] };
   const roundIdFor = (m: ListedMatch): { phase: ParsedPhase; roundId: string } => {
-    const phase = m.phaseLabel === "Faza Zasadnicza" ? regular : playoffs;
+    // The site files "Mecze o 3. miejsce" and "Mecze o 5. miejsce" under the play-off.
+    const phase =
+      m.phaseLabel === "Faza Zasadnicza" ? regular : /Mecze o \d+\. miejsce/.test(m.roundHeading) ? placement : playoffs;
     const label = m.phaseLabel === "Faza Zasadnicza" ? m.roundHeading.replace(/^Kolejka:\s*/, "Kolejka ") : m.roundHeading;
     let round = phase.rounds.find((r) => r.label === label);
     if (!round) {
@@ -162,7 +169,6 @@ export async function buildPlusLiga(
   };
 
   const matches: ParsedMatch[] = [];
-  const usedMatchSlugs = new Set<string>();
   for (const m of listed) {
     const page = matchPages.get(m.siteId);
     const home = teamBySiteId(m.homeClubSiteId);
@@ -172,13 +178,10 @@ export async function buildPlusLiga(
     const sets = page?.sets ?? [];
     const finished = (page?.setsHome ?? m.setsHome) !== null && sets.length > 0;
 
-    let slug = `${localDateString(local)}-${home.club.slug}-${away.club.slug}`;
-    if (usedMatchSlugs.has(slug)) slug = `${slug}-${m.siteId}`;
-    usedMatchSlugs.add(slug);
-
     matches.push({
       id: matchId(m.siteId),
-      slug,
+      // The loader adds a suffix when another Match already has this slug.
+      slug: `${localDateString(local)}-${home.club.slug}-${away.club.slug}`,
       phaseId: phase.id,
       roundId,
       homeTeamId: home.team.id,
@@ -228,34 +231,38 @@ export async function buildPlusLiga(
   const listedById = new Map(listed.map((m) => [m.siteId, m]));
   const boxScoreLines: ParsedBoxScoreLine[] = [];
   const wantedSeasonLabel = seasonLabelOnSite(season);
-  let unmatchedRows = 0;
+  const seen = new Set<string>();
   for (const [siteId, page] of playerPages) {
     if (page.seasonLabel !== wantedSeasonLabel) continue;
+    // The Clubs the Player was registered with in this Season, for rows whose Team name does not match.
+    const clubSiteIds = page.history.filter((h) => h.tour === mainTour).map((h) => h.clubSiteId);
     for (const row of page.matchRows) {
       const match = listedById.get(row.matchSiteId);
       if (!match) {
-        unmatchedRows++;
+        warn(`${page.name} has a Box score row for Match ${row.matchSiteId}, which is not in the match list`);
         continue;
       }
-      const side = normaliseName(row.teamName) === normaliseName(match.homeName) ? match.homeClubSiteId
-        : normaliseName(row.teamName) === normaliseName(match.awayName) ? match.awayClubSiteId
-        : null;
+      const side = resolveBoxScoreSide(row, match, clubSiteIds);
       if (side === null) {
-        log(`warning: ${page.name} played Match ${row.matchSiteId} for "${row.teamName}", which is neither side`);
-        unmatchedRows++;
+        warn(`${page.name} played Match ${row.matchSiteId} for "${row.teamName}", which cannot be told apart from "${row.opponentName}"`);
         continue;
       }
+      const key = `${row.matchSiteId}|${siteId}`;
+      if (seen.has(key)) {
+        warn(`${page.name} has two Box score rows for Match ${row.matchSiteId}; the second is ignored`);
+        continue;
+      }
+      seen.add(key);
       const { core, leagueStats } = mapBoxScore(row.stats);
       boxScoreLines.push({
         matchId: matchId(row.matchSiteId),
         playerId: playerId(siteId),
-        teamId: teamBySiteId(side).team.id,
+        teamId: teamBySiteId(side === "home" ? match.homeClubSiteId : match.awayClubSiteId).team.id,
         ...core,
         leagueStats,
       });
     }
   }
-  if (unmatchedRows > 0) log(`warning: ${unmatchedRows} Box score rows could not be tied to a Match`);
 
   const seasons: ParsedSeason[] = [];
   for (const label of [season, ...plan.rosterSeasons]) {
@@ -275,7 +282,7 @@ export async function buildPlusLiga(
     seasons.push({
       id: seasonId(label),
       label,
-      phases: isMain ? [regular, playoffs] : [],
+      phases: isMain ? [regular, playoffs, placement].filter((p) => p.rounds.length > 0) : [],
       teams: [...records.values()].map((r) => r.team),
       rosterEntries,
       matches: isMain ? matches : [],
@@ -297,5 +304,6 @@ export async function buildPlusLiga(
     players,
     seasons,
     sourceRefs,
+    warnings,
   };
 }
