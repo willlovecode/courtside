@@ -5,6 +5,10 @@ import { buildPlusLiga } from "./plusliga/build";
 import { leagueId as plusLigaId } from "./plusliga/config";
 import { fetchPlusLiga } from "./plusliga/fetch";
 import { seasonPlans } from "./plusliga/seasons";
+import { buildSuperLega } from "./superlega/build";
+import { leagueId as superLegaId } from "./superlega/config";
+import { fetchSuperLega } from "./superlega/fetch";
+import { seasonPlans as superLegaPlans } from "./superlega/seasons";
 
 /** One League's scraper: the first two steps are its own, load and check are shared. */
 export interface LeagueAdapter {
@@ -24,4 +28,11 @@ const plusLiga: LeagueAdapter = {
   parse: buildPlusLiga,
 };
 
-export const adapters: Record<string, LeagueAdapter> = { [plusLiga.id]: plusLiga };
+const superLega: LeagueAdapter = {
+  id: superLegaId,
+  seasonsFor: (season) => [season, ...(superLegaPlans[season]?.rosterSeasons ?? [])],
+  fetch: fetchSuperLega,
+  parse: buildSuperLega,
+};
+
+export const adapters: Record<string, LeagueAdapter> = { [plusLiga.id]: plusLiga, [superLega.id]: superLega };

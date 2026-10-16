@@ -47,7 +47,7 @@ Per League, as of October 2026:
 
 - **Poland** (tauronliga.pl): plain HTML, using the `nocookies/1` URL variants. Season 2025-26 is tour 52, 2026-27 is tour 53. Match pages carry sets and facts; their per-player stats are an embedded Volleystation widget (blocked), so Box scores come from each Player's page, which lists one row per Match. A Player who left mid-season and is on no final Roster is therefore missing. No nationality is published.
 - **Japan** (svleague.jp): plain HTML, season selector `s=2025`. No published Season stats, so Season totals are summed from Box scores.
-- **Italy** (legavolley.it): the 2025-26 archive is still to be located, possibly through the site's own data requests.
+- **Italy** (legavolley.it): plain HTML. Results come per round from `/risultati/?Anno=2025&IdCampionato=…` (competition, phase and round ids are read from the page's selectors; ids change every year), the play-offs as brackets linking to `/match/<id>`. Match pages carry sets, facts and both Box scores. Team ids change every Season, so the Club is the `Squadra=` code in the statistics links; Rosters are on `/team/<id>`, Players are keyed like `BIS-ALE-05` and have a page with birth date and nationality. Names are written "Surname Name".
 - **Germany** (volleyball-bundesliga.de): rendered with Playwright; plain requests return an empty SAMS shell.
 - **Turkey**: out of the MVP, see ADR 0001.
 
