@@ -1,0 +1,24 @@
+{
+  "name": "@courtside/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "db:push": "tsx src/push.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  }
+}
