@@ -27,12 +27,30 @@ Stack: TypeScript monorepo (Next.js site, scrapers and a shared Drizzle schema),
 
 ## Order of work
 
-1. Throwaway clickable prototype of Home, League and Match pages on mock data, to settle the look.
-2. League scrapers in this order: Poland, Italy, Japan, Germany, Turkey.
-3. Transfers detected from Roster changes.
+1. Throwaway clickable prototype of Home, League and Match pages on mock data, to settle the look. Reference: Volleyball World's VNL broadcast graphics; two variants.
+2. League scrapers in this order: Poland, Italy, Japan, Germany, Turkey. The 2025-26 Season in full, plus 2026-27 Rosters.
+3. Transfers detected from Roster changes between 2025-26 and 2026-27.
 4. Later: news (headline, summary, link), women's leagues, live scores.
 
 Raw fetched pages and club logos are stored in Cloudflare R2, not in git.
+
+## Scrapers
+
+Each League has one adapter with four separate steps:
+
+1. **fetch** downloads pages and stores them as snapshots.
+2. **parse** turns a snapshot into Matches, Standings, Teams and Players. It never touches the network, so a fixed parser is re-run on stored snapshots.
+3. **load** upserts into Postgres.
+4. **check** runs plausibility rules: every Team has a Roster of at least 12 Players, every finished Match has 3 to 5 valid sets (25 points with a 2-point margin, 15 in the fifth), and the Match count fits the League's format.
+
+Runs start by hand from the command line while we work on the finished 2025-26 Season. Scheduled GitHub Actions runs, which open an issue when a check fails, come with the live Season. Parsers are tested with Vitest against a few real pages per page type committed to the repo.
+
+## MVP is done when
+
+- The site is live on a `*.vercel.app` address.
+- At least four of the five Leagues have their 2025-26 Season complete: every Match with set scores, final Standings per Phase, Rosters, Club and Player pages.
+- The summer 2026 Transfers are listed.
+- `npm run check` (lint, types, tests, build) passes and the health checks pass for every loaded League.
 
 ## Docs
 
