@@ -138,7 +138,8 @@ export async function loadLeague(db: Database, parsed: ParsedLeague): Promise<Lo
       summary.rosterEntries += season.rosterEntries.length;
     }
 
-    for (const part of chunks(parsed.sourceRefs)) {
+    const refs = new Map(parsed.sourceRefs.map((ref) => [`${ref.entityType}|${ref.entityId}|${ref.sourceUrl}`, ref]));
+    for (const part of chunks([...refs.values()])) {
       await tx
         .insert(s.sourceRefs)
         .values(part.map((ref) => ({ ...ref, leagueId: parsed.league.id })))
