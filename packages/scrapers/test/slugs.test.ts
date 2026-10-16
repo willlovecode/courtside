@@ -23,6 +23,11 @@ describe("resolveSlugs", () => {
     expect(result.get("pl-p9")).toBe("marcel-kicinski-p9");
   });
 
+  it("lowercases the suffix, since slugs are lowercase", () => {
+    const result = resolveSlugs([{ id: "it-pBIS-ALE-05", slug: "x", suffix: "pBIS-ALE-05" }], new Map([["a", "x"]]));
+    expect(result.get("it-pBIS-ALE-05")).toBe("x-pbis-ale-05");
+  });
+
   it("settles two new rows with the same wish in id order", () => {
     const result = resolveSlugs(
       [

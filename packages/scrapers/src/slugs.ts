@@ -23,9 +23,10 @@ export function resolveSlugs(requests: SlugRequest[], existing: Map<string, stri
       resolved.set(request.id, kept);
       continue;
     }
+    const suffix = request.suffix.toLowerCase();
     let slug = request.slug;
-    if (taken.has(slug)) slug = `${request.slug}-${request.suffix}`;
-    for (let n = 2; taken.has(slug); n++) slug = `${request.slug}-${request.suffix}-${n}`;
+    if (taken.has(slug)) slug = `${request.slug}-${suffix}`;
+    for (let n = 2; taken.has(slug); n++) slug = `${request.slug}-${suffix}-${n}`;
     taken.add(slug);
     resolved.set(request.id, slug);
   }

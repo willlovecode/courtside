@@ -43,6 +43,14 @@ export function parseDotDateTime(text: string): LocalDateTime {
   return { year, month, day, hour, minute };
 }
 
+/** Parses "25/2/2026" and "20:30" as used on legavolley.it. */
+export function parseSlashDateTime(date: string, time: string): LocalDateTime {
+  const d = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(date.trim());
+  const t = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
+  if (!d || !t) throw new Error(`Unrecognised date and time: "${date}" "${time}"`);
+  return { year: Number(d[3]), month: Number(d[2]), day: Number(d[1]), hour: Number(t[1]), minute: Number(t[2]) };
+}
+
 export function localDateString(local: LocalDateTime): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${local.year}-${pad(local.month)}-${pad(local.day)}`;

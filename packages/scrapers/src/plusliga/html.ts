@@ -1,18 +1,5 @@
-import * as cheerio from "cheerio";
-import type { Cheerio, CheerioAPI } from "cheerio";
-import type { AnyNode } from "domhandler";
-
-export type Page = CheerioAPI;
-export type Nodes = Cheerio<AnyNode>;
-
-export function loadPage(html: string): Page {
-  return cheerio.load(html);
-}
-
-/** Visible text with runs of whitespace (including non-breaking spaces) collapsed. */
-export function textOf(nodes: Nodes): string {
-  return nodes.text().replace(/\s+/g, " ").trim();
-}
+export { loadPage, textOf } from "../html";
+export type { Nodes, Page } from "../html";
 
 /** Reads a number as printed on the site: "1 234", "-18%", "0,0885". Dashes and blanks are null. */
 export function parseNumber(raw: string): number | null {
