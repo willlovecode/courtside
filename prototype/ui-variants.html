@@ -1,0 +1,709 @@
+<title>Courtside Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* PROTOTYPE, throwaway. Question: what should Courtside look like in a dark broadcast style?
+   Two variants on one page, switch with the bottom bar, the arrow keys, or #a / #b.
+   Layout: A = broadcast lower-thirds over a two-column sheet. B = control-room panel wall beside a league rail.
+   Deliberately single (dark) theme: the direction chosen was "dark broadcast scoreboard". */
+:root {
+  color-scheme: dark;
+  /* Variant A: night-session arena, VNL-like magenta/violet graphics */
+  --a-bg: #090c1d; --a-panel: #121735; --a-panel2: #1a2050; --a-line: #283070;
+  --a-fg: #f2f3ff; --a-dim: #959bcd; --a-accent: #ff3d6e; --a-accent2: #7c5cff;
+  /* Variant B: scorer's table at night, LED amber on graphite */
+  --b-bg: #0c0d0f; --b-panel: #141619; --b-line: #2a2d33; --b-fg: #e7e4db;
+  --b-dim: #8b887f; --b-amber: #ffb000; --b-cyan: #52d3ea; --b-cell: #22252a;
+  /* Prototype chrome, deliberately not part of either design */
+  --bar-bg: #f5f5f5; --bar-fg: #111111; --bar-dim: #666666;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-body: 'Barlow', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  --f-cond: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100%; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+:focus-visible { outline: 2px solid var(--a-accent); outline-offset: 2px; }
+.scroll { overflow-x: auto; }
+.num { font-variant-numeric: tabular-nums; }
+.proto-tag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); right: max(8px, env(safe-area-inset-right, 0px)); z-index: 50;
+  font: 600 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; background: var(--bar-bg); color: var(--bar-fg);
+  padding: 5px 8px; border-radius: 3px; opacity: .85; pointer-events: none; }
+
+/* ---------- Switcher (prototype chrome) ---------- */
+.switcher { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 60;
+  display: flex; align-items: center; gap: 4px; background: var(--bar-bg); color: var(--bar-fg); border-radius: 999px;
+  padding: 5px; box-shadow: 0 6px 24px rgba(0,0,0,.5); font: 600 13px/1 system-ui, sans-serif; white-space: nowrap; }
+.switcher button { width: 34px; height: 34px; border-radius: 999px; font-size: 18px; color: var(--bar-fg); }
+.switcher button:hover { background: #e2e2e2; }
+.switcher .lbl { padding: 0 10px; }
+.switcher .lbl small { color: var(--bar-dim); font-weight: 500; }
+
+/* =====================================================================
+   VARIANT A: BROADCAST
+   ===================================================================== */
+body.va { background: var(--a-bg); color: var(--a-fg); font: 400 15px/1.45 var(--f-body);
+  background-image: radial-gradient(1200px 500px at 85% -10%, rgba(124,92,255,.22), transparent 60%),
+                    radial-gradient(900px 400px at -10% 10%, rgba(255,61,110,.12), transparent 60%);
+  background-attachment: fixed; }
+.va .wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 110px; }
+.va header { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; padding-block: 22px 18px; }
+.va .mark { font: italic 800 30px/1 var(--f-display); letter-spacing: .02em; text-transform: uppercase;
+  background: linear-gradient(100deg, var(--a-accent), var(--a-accent2)); padding: 6px 22px 5px 14px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.va nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.va nav button { font: 700 15px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--a-dim);
+  padding: 9px 16px 8px; background: var(--a-panel); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.va nav button[aria-current="true"], .va nav button:hover { color: var(--a-fg); background: var(--a-panel2); box-shadow: inset 0 -3px 0 var(--a-accent); }
+.va .season { margin-left: auto; font: 600 13px/1 var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--a-dim); }
+.va .season b { color: var(--a-fg); }
+.va h2 { font: 800 15px/1 var(--f-display); letter-spacing: .16em; text-transform: uppercase; color: var(--a-dim); margin: 0 0 12px;
+  display: flex; align-items: center; gap: 10px; }
+.va h2::before { content: ""; width: 18px; height: 4px; background: var(--a-accent); transform: skewX(-20deg); }
+.va .cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.va section { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.va .stack { display: grid; gap: 28px; min-width: 0; }
+
+/* lower-third score bug */
+.va .bug { display: grid; grid-template-columns: 6px minmax(0,1fr) auto auto auto minmax(0,1fr) 6px; align-items: stretch; width: 100%;
+  background: var(--a-panel); text-align: left; transition: transform .15s ease, background .15s ease; }
+.va .bug:hover { background: var(--a-panel2); transform: translateX(3px); }
+.va .bug .stripe { background: var(--c); }
+.va .bug .tm { display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-width: 0; font: 700 18px/1.05 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+.va .bug .tm.away { justify-content: flex-end; text-align: right; }
+.va .bug .tm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.va .bug .tm.lost span { color: var(--a-dim); }
+.va .bug .sc { display: grid; place-items: center; min-width: 46px; font: 800 30px/1 var(--f-display); background: var(--a-bg); }
+.va .bug .sc.w { background: var(--a-fg); color: var(--a-bg); }
+.va .bug .mid { display: grid; place-items: center; padding: 0 6px; font: 600 11px/1 var(--f-display); letter-spacing: .14em; color: var(--a-dim);
+  background: linear-gradient(180deg, var(--a-accent), var(--a-accent2)); color: #fff; writing-mode: vertical-rl; transform: rotate(180deg); }
+.va .bugmeta { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; font: 500 13px/1.2 var(--f-display); letter-spacing: .06em; color: var(--a-dim); padding: 4px 2px 0; text-transform: uppercase; }
+.va .sets { display: inline-flex; gap: 8px; font-family: var(--f-display); font-variant-numeric: tabular-nums; }
+.va .sets i { font-style: normal; } .va .sets i b { color: var(--a-fg); font-weight: 700; }
+.va .fixture { display: grid; gap: 0; }
+
+/* broadcast table */
+.va table { width: 100%; border-collapse: separate; border-spacing: 0 3px; font: 600 16px/1 var(--f-display); }
+.va th { font: 600 12px/1 var(--f-display); letter-spacing: .12em; color: var(--a-dim); text-transform: uppercase; text-align: right; padding: 4px 8px; }
+.va th:nth-child(-n+2) { text-align: left; }
+.va td { background: var(--a-panel); padding: 9px 8px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.va td.pos { width: 40px; text-align: center; font-weight: 800; font-size: 18px; background: var(--a-panel2); box-shadow: inset 4px 0 0 var(--c); }
+.va td.team { text-align: left; text-transform: uppercase; letter-spacing: .02em; width: 100%; }
+.va td.team button { display: flex; align-items: center; gap: 10px; text-align: left; text-transform: uppercase; }
+.va td.pts { background: var(--a-fg); color: var(--a-bg); font-weight: 800; font-size: 18px; min-width: 44px; text-align: center; }
+.va tr.top td.pos { background: linear-gradient(180deg, var(--a-accent), var(--a-accent2)); color: #fff; }
+.va .form { display: inline-flex; gap: 3px; }
+.va .form i { width: 8px; height: 16px; background: var(--a-line); transform: skewX(-14deg); }
+.va .form i.w { background: var(--a-accent); }
+.va .mini td { padding: 7px 8px; font-size: 15px; }
+.va .minihead { display: flex; justify-content: space-between; align-items: baseline; }
+.va .link { font: 600 12px/1 var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--a-accent); }
+.va .link:hover { text-decoration: underline; }
+
+.va .badge { --s: 28px; width: var(--s); height: var(--s); flex: none; display: grid; place-items: center; background: var(--c); color: var(--c2);
+  font: 800 calc(var(--s) * .36)/1 var(--f-display); letter-spacing: .02em; clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%); }
+
+.va .transfers { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.va .tr { background: var(--a-panel); padding: 12px 14px; display: grid; gap: 8px; }
+.va .tr .who { font: 700 20px/1 var(--f-display); text-transform: uppercase; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.va .tr .who small { font: 600 12px/1 var(--f-display); letter-spacing: .12em; color: var(--a-dim); }
+.va .tr .path { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px; font: 600 14px/1.1 var(--f-display); text-transform: uppercase; }
+.va .tr .path > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.va .tr .path > span:last-child { justify-content: flex-end; text-align: right; }
+.va .tr .arrow { width: 26px; height: 12px; background: linear-gradient(90deg, var(--a-accent2), var(--a-accent)); clip-path: polygon(0 35%, 65% 35%, 65% 0, 100% 50%, 65% 100%, 65% 65%, 0 65%); }
+.va .tr .when { font: 500 12px/1 var(--f-display); letter-spacing: .1em; color: var(--a-dim); text-transform: uppercase; }
+
+/* league hero + round switch */
+.va .hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 0 22px; }
+.va .hero h1 { margin: 0; font: italic 800 clamp(44px, 9vw, 92px)/.85 var(--f-display); text-transform: uppercase; letter-spacing: -.01em; }
+.va .hero p { margin: 8px 0 0; font: 600 15px/1 var(--f-display); letter-spacing: .14em; color: var(--a-dim); text-transform: uppercase; }
+.va .roundsw { display: flex; align-items: center; gap: 4px; font: 700 16px/1 var(--f-display); text-transform: uppercase; letter-spacing: .08em; }
+.va .roundsw button { background: var(--a-panel2); width: 38px; height: 34px; font-size: 18px; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.va .roundsw button:disabled { opacity: .3; cursor: default; }
+.va .roundsw span { padding: 0 12px; min-width: 120px; text-align: center; }
+
+/* match scoreboard */
+.va .board { background: var(--a-panel); display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: stretch; margin-bottom: 4px; }
+.va .board .side { display: flex; align-items: center; gap: 16px; padding: 22px 22px; min-width: 0; box-shadow: inset 6px 0 0 var(--c); }
+.va .board .side.away { flex-direction: row-reverse; text-align: right; box-shadow: inset -6px 0 0 var(--c); }
+.va .board .side .badge { --s: 64px; }
+.va .board .side h3 { margin: 0; font: 800 clamp(20px, 3.4vw, 34px)/.95 var(--f-display); text-transform: uppercase; }
+.va .board .side p { margin: 6px 0 0; font: 600 13px/1 var(--f-display); color: var(--a-dim); letter-spacing: .12em; text-transform: uppercase; }
+.va .board .big { display: flex; align-items: center; background: var(--a-bg); }
+.va .board .big b { font: 800 clamp(56px, 10vw, 104px)/1 var(--f-display); padding: 0 18px; font-variant-numeric: tabular-nums; }
+.va .board .big b.w { color: var(--a-fg); } .va .board .big b.l { color: var(--a-dim); }
+.va .board .big i { width: 4px; height: 50%; background: linear-gradient(180deg, var(--a-accent), var(--a-accent2)); transform: skewX(-16deg); }
+.va .setrow { display: grid; grid-template-columns: 1fr repeat(var(--n), minmax(44px, 64px)) 1fr; gap: 3px; margin-bottom: 18px; }
+.va .setrow div { background: var(--a-panel); display: grid; gap: 2px; text-align: center; padding: 8px 0; font: 700 22px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.va .setrow div small { font: 600 11px/1 var(--f-display); letter-spacing: .12em; color: var(--a-dim); }
+.va .setrow div .lo { color: var(--a-dim); }
+.va .setrow .pad { background: transparent; }
+.va .meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font: 600 14px/1.2 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--a-dim); margin-bottom: 26px; }
+.va .meta b { color: var(--a-fg); font-weight: 700; }
+.va .mvp { display: flex; align-items: center; gap: 14px; background: linear-gradient(100deg, var(--a-accent), var(--a-accent2)); padding: 12px 18px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); margin-bottom: 26px; max-width: 520px; }
+.va .mvp small { font: 700 12px/1 var(--f-display); letter-spacing: .18em; }
+.va .mvp b { font: 800 26px/1 var(--f-display); text-transform: uppercase; }
+.va .mvp span { margin-left: auto; font: 600 15px/1 var(--f-display); letter-spacing: .06em; padding-right: 10px; }
+.va .box td.pl { text-align: left; text-transform: uppercase; width: 100%; }
+.va .box td.no { text-align: center; color: var(--a-dim); width: 36px; box-shadow: inset 4px 0 0 var(--c); }
+.va .box td.hi { background: var(--a-panel2); font-weight: 800; }
+.va .box tfoot td { background: transparent; color: var(--a-dim); }
+.va .boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px; }
+.va .note { font: 500 13px/1.4 var(--f-body); color: var(--a-dim); }
+
+@media (max-width: 860px) {
+  .va .cols { grid-template-columns: minmax(0,1fr); }
+  .va .season { margin-left: 0; width: 100%; }
+}
+@media (max-width: 520px) {
+  .va .board { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); }
+  .va .board .side { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 12px; }
+  .va .board .side.away { flex-direction: column; align-items: flex-end; }
+  .va .board .side .badge { --s: 40px; }
+  .va .board .big b { padding: 0 8px; }
+  .va .bug .tm { font-size: 15px; padding: 9px 8px; gap: 6px; }
+  .va .bug .tm .badge { display: none; }
+  .va .bug .sc { min-width: 36px; font-size: 24px; }
+}
+
+/* =====================================================================
+   VARIANT B: CONTROL ROOM
+   ===================================================================== */
+body.vb { background: var(--b-bg); color: var(--b-fg); font: 400 13px/1.45 var(--f-mono); }
+.vb .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.vb aside { border-right: 1px solid var(--b-line); padding-block: 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh; display: flex; flex-direction: column; gap: 18px; }
+.vb .mark { font: 700 15px/1 var(--f-mono); letter-spacing: .3em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.vb .mark i { width: 10px; height: 10px; background: var(--b-amber); border-radius: 50%; box-shadow: 0 0 12px var(--b-amber); }
+.vb .rail { display: grid; gap: 2px; }
+.vb .rail button { display: grid; grid-template-columns: 38px minmax(0,1fr); align-items: center; gap: 8px; text-align: left; padding: 8px 8px; border-radius: 3px; color: var(--b-dim); }
+.vb .rail button b { font: 600 11px/1 var(--f-mono); color: var(--b-bg); background: var(--b-dim); padding: 4px 0; text-align: center; border-radius: 2px; }
+.vb .rail button span { font: 600 14px/1.1 var(--f-cond); }
+.vb .rail button[aria-current="true"] { background: var(--b-panel); color: var(--b-fg); }
+.vb .rail button[aria-current="true"] b { background: var(--b-amber); }
+.vb .rail button:hover { color: var(--b-fg); }
+.vb .rail .off { opacity: .4; cursor: default; }
+.vb .railnote { margin-top: auto; color: var(--b-dim); font-size: 11px; line-height: 1.5; }
+.vb main { min-width: 0; padding-block: 18px 110px; padding-left: 18px; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.vb .topline { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 14px; color: var(--b-dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.vb .topline h1 { margin: 0; font: 700 22px/1 var(--f-cond); color: var(--b-fg); letter-spacing: 0; text-transform: none; }
+.vb .topline .live { color: var(--b-amber); }
+.vb .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.vb .panel { background: var(--b-panel); border: 1px solid var(--b-line); min-width: 0; }
+.vb .panel > h3 { margin: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--b-line);
+  font: 600 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--b-dim); }
+.vb .panel > h3 button { color: var(--b-fg); letter-spacing: .14em; text-transform: uppercase; }
+.vb .panel > h3 button:hover { color: var(--b-amber); }
+.vb .panel > h3 .tag { color: var(--b-amber); }
+.vb .pbody { padding: 8px 12px 12px; }
+.vb .span2 { grid-column: 1 / -1; }
+.vb table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.vb th { font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--b-dim); text-align: right; padding: 6px 6px; border-bottom: 1px solid var(--b-line); }
+.vb th.l, .vb td.l { text-align: left; }
+.vb td { padding: 5px 6px; text-align: right; border-bottom: 1px solid #1d2024; white-space: nowrap; }
+.vb td.tm { font: 600 13px/1.2 var(--f-cond); width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.vb td.tm button { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+.vb td.tm button:hover { color: var(--b-amber); }
+.vb td.pts { color: var(--b-amber); font-weight: 600; }
+.vb tr.cut td { border-bottom: 1px dashed var(--b-amber); }
+.vb .chip { width: 8px; height: 8px; border-radius: 1px; background: var(--c); flex: none; }
+.vb .code { display: inline-block; width: 34px; font: 600 11px/1 var(--f-mono); padding: 3px 0; text-align: center; background: var(--c); color: var(--c2); border-radius: 2px; }
+
+.vb .res { display: grid; grid-template-columns: 34px 16px 34px minmax(0,1fr); align-items: center; gap: 8px; padding: 5px 0; width: 100%; text-align: left; border-bottom: 1px solid #1d2024; }
+.vb .res:hover { background: #1a1d21; }
+.vb .res .s { font-weight: 600; text-align: center; } .vb .res .s.w { color: var(--b-amber); }
+.vb .heat { display: flex; gap: 2px; justify-content: flex-end; }
+.vb .heat i { font-style: normal; width: 44px; text-align: center; font-size: 11px; padding: 3px 0; border-radius: 2px; background: var(--b-cell); color: var(--b-dim); }
+.vb .heat i.h { background: color-mix(in srgb, var(--b-amber) var(--k), var(--b-cell)); color: var(--b-bg); }
+.vb .heat i.a { background: color-mix(in srgb, var(--b-cyan) var(--k), var(--b-cell)); color: var(--b-bg); }
+.vb .legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--b-dim); font-size: 11px; margin-top: 8px; }
+.vb .legend i { display: inline-block; width: 10px; height: 10px; vertical-align: -1px; margin-right: 5px; border-radius: 2px; }
+
+.vb .log { font-size: 12px; display: grid; }
+.vb .log div { display: grid; grid-template-columns: 92px 34px minmax(120px, 1.2fr) minmax(0, 2fr) 70px; gap: 10px; padding: 5px 0; border-bottom: 1px solid #1d2024; align-items: center; }
+.vb .log .dim { color: var(--b-dim); }
+.vb .log .mv { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.vb .log .mv span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vb .log .ty { color: var(--b-amber); text-transform: uppercase; font-size: 11px; text-align: right; }
+
+/* cross table */
+.vb .cross { border-collapse: separate; border-spacing: 2px; }
+.vb .cross th, .vb .cross td { border: 0; padding: 0; }
+.vb .cross th { padding: 4px; text-align: center; }
+.vb .cross th.rowh { text-align: left; }
+.vb .cross td button { width: 46px; height: 30px; font-size: 12px; background: var(--b-cell); color: var(--b-dim); border-radius: 2px; }
+.vb .cross td button.hw { background: color-mix(in srgb, var(--b-amber) 70%, var(--b-cell)); color: var(--b-bg); font-weight: 600; }
+.vb .cross td button.aw { background: color-mix(in srgb, var(--b-cyan) 55%, var(--b-cell)); color: var(--b-bg); font-weight: 600; }
+.vb .cross td button:hover { outline: 1px solid var(--b-fg); }
+.vb .cross td.self { background: repeating-linear-gradient(45deg, #1b1e22 0 4px, transparent 4px 8px); width: 46px; height: 30px; }
+.vb svg text { font-family: var(--f-mono); }
+
+/* match */
+.vb .mhead { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 12px; align-items: center; padding: 16px 14px; }
+.vb .mhead .t { display: flex; align-items: center; gap: 10px; font: 700 clamp(16px, 2.4vw, 24px)/1.1 var(--f-cond); min-width: 0; }
+.vb .mhead .t.away { justify-content: flex-end; text-align: right; }
+.vb .mhead .t .code { width: 44px; font-size: 13px; padding: 5px 0; }
+.vb .mhead .sc { font: 600 clamp(34px, 5vw, 52px)/1 var(--f-mono); letter-spacing: .04em; display: flex; gap: 14px; }
+.vb .mhead .sc .w { color: var(--b-amber); } .vb .mhead .sc .l { color: var(--b-dim); }
+.vb .facts { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 10px 14px; border-top: 1px solid var(--b-line); color: var(--b-dim); font-size: 12px; }
+.vb .facts b { color: var(--b-fg); font-weight: 500; }
+.vb .sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+.vb .setcard h4 { margin: 0 0 6px; display: flex; justify-content: space-between; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; color: var(--b-dim); text-transform: uppercase; }
+.vb .setcard h4 b { color: var(--b-fg); font-weight: 600; letter-spacing: .04em; }
+.vb .box td.pl { font: 600 13px/1.2 var(--f-cond); text-align: left; }
+.vb .box tr.mvp td { color: var(--b-amber); }
+.vb .box tr.sep td { padding-top: 12px; color: var(--b-dim); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid var(--b-line); }
+.vb .back { color: var(--b-dim); font-size: 12px; } .vb .back:hover { color: var(--b-amber); }
+
+@media (max-width: 900px) {
+  .vb .shell { grid-template-columns: minmax(0,1fr); }
+  .vb aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--b-line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .vb .rail { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .vb .railnote { display: none; }
+  .vb main { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .vb .grid { grid-template-columns: minmax(0,1fr); }
+  .vb .log div { grid-template-columns: 80px 30px minmax(0,1fr); }
+  .vb .log div > :nth-child(4), .vb .log div > :nth-child(5) { grid-column: 3; }
+  .vb .log .ty { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="proto-tag">Prototype · mock data</div>
+<div id="app"></div>
+<div class="switcher" role="toolbar" aria-label="Design variant">
+  <button id="prev" aria-label="Previous variant">‹</button>
+  <span class="lbl" id="vlabel"></span>
+  <button id="next" aria-label="Next variant">›</button>
+</div>
+
+<script>
+// ---------- Mock data (deterministic). Club names are real; every score, player and transfer is invented. ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R = mulberry32(2025);
+const ri = (a,b) => a + Math.floor(R()*(b-a+1));
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+
+const LEAGUES = [
+  { id:'plusliga', name:'PlusLiga', country:'Poland', cc:'POL', tz:'Europe/Warsaw', city:'Warsaw', off:1, kick:['17:30','20:30'],
+    surnames:['Nowicki','Wrona','Zieliński','Kaczmarek','Grabowski','Pawlak','Sikora','Mazur','Krawczyk','Dudek','Wójcik','Lis','Kołodziej','Bąk','Jasiński','Michalak','Walczak','Szewczyk','Urban','Adamczyk'],
+    teams:[['ZAW','Aluron CMC Warta Zawiercie','Zawiercie','#f6c400','#141414'],['LUB','Bogdanka LUK Lublin','Lublin','#0b9ad6','#ffffff'],['JAS','Jastrzębski Węgiel','Jastrzębie-Zdrój','#f08a00','#141414'],['WAR','PGE Projekt Warszawa','Warsaw','#d0112b','#ffffff'],['RES','Asseco Resovia','Rzeszów','#c8102e','#ffffff'],['ZAK','ZAKSA Kędzierzyn-Koźle','Kędzierzyn-Koźle','#1c56b5','#ffffff'],['OLS','Indykpol AZS Olsztyn','Olsztyn','#0a8a45','#ffffff'],['GDA','Trefl Gdańsk','Gdańsk','#ffd200','#0d3592']] },
+  { id:'superlega', name:'SuperLega', country:'Italy', cc:'ITA', tz:'Europe/Rome', city:'Rome', off:1, kick:['18:00','20:30'],
+    surnames:['Rinaldi','Ferraro','Galli','Conti','Marchetti','Barbieri','Fontana','Moretti','Lombardi','Testa','Bianco','Caruso','Gatti','Pellegrini','Longo','Serra','Vitale','Mariani','Sala','Riva'],
+    teams:[['PER','Sir Susa Vim Perugia','Perugia','#d4121f','#ffffff'],['TRE','Itas Trentino','Trento','#ffd400','#13294b'],['CIV','Cucine Lube Civitanova','Civitanova Marche','#e2001a','#111111'],['MIL','Allianz Milano','Milan','#0a3d91','#ffffff'],['VER','Rana Verona','Verona','#1f2a44','#f3c300'],['MOD','Valsa Group Modena','Modena','#f6c500','#0a2f6b'],['PIA','Gas Sales Bluenergy Piacenza','Piacenza','#d71920','#ffffff'],['MON','Vero Volley Monza','Monza','#00a0df','#ffffff']] },
+  { id:'sv-league', name:'SV.League', country:'Japan', cc:'JPN', tz:'Asia/Tokyo', city:'Tokyo', off:9, kick:['14:05','15:05'],
+    surnames:['Takeda','Morita','Kondo','Ishida','Fujii','Ogawa','Sakai','Hayashi','Kimura','Shimizu','Yamada','Inoue','Matsumoto','Nakamura','Endo','Aoki','Mori','Hasegawa','Okada','Maeda'],
+    teams:[['SUN','Suntory Sunbirds Osaka','Osaka','#0067b1','#ffffff'],['BLU','Osaka Bluteon','Osaka','#1d3b8f','#e9eef9'],['STI','JTEKT Stings Aichi','Kariya','#e60012','#ffffff'],['WLF','Wolfdogs Nagoya','Nagoya','#111111','#e3b33c'],['TGB','Tokyo Great Bears','Tokyo','#00205b','#e8c400'],['HIR','Hiroshima Thunders','Hiroshima','#7a1fa2','#ffffff'],['SAK','Nippon Steel Sakai Blazers','Sakai','#ef7d00','#111111'],['TOR','Toray Arrows Shizuoka','Mishima','#0091d2','#ffffff']] },
+  { id:'bundesliga', name:'Bundesliga', country:'Germany', cc:'GER', tz:'Europe/Berlin', city:'Berlin', off:1, kick:['18:00','19:30'],
+    surnames:['Brandt','Krüger','Hahn','Vogel','Lorenz','Seidel','Kraus','Busch','Pohl','Engel','Franke','Winter','Roth','Beck','Arnold','Sommer','Graf','Ludwig','Kühn','Möller'],
+    teams:[['BRV','Berlin Recycling Volleys','Berlin','#f39200','#111111'],['LÜN','SVG Lüneburg','Lüneburg','#003a7d','#ffffff'],['VFB','VfB Friedrichshafen','Friedrichshafen','#00508c','#ffffff'],['GIE','Helios Grizzlys Giesen','Hildesheim','#7cb82f','#111111'],['DÜR','SWD powervolleys Düren','Düren','#e30613','#ffffff'],['NET','Energiequelle Netzhoppers','Königs Wusterhausen','#ffd500','#1a1a1a'],['HAC','TSV Haching München','Munich','#1e5aa8','#ffffff'],['DAC','ASV Dachau','Dachau','#0f6f3f','#ffffff']] },
+];
+const POS = ['OH','OH','OPP','MB','MB','S','L'];
+const SHARE = [.24,.19,.27,.12,.11,.05,0];
+const INIT = 'ABDEFGJKLMNPRST';
+
+for (const L of LEAGUES) {
+  L.teams = L.teams.map(([code,name,city,c1,c2], i) => {
+    const used = new Set();
+    const roster = POS.map(pos => {
+      let n; do { n = L.surnames[ri(0, L.surnames.length-1)]; } while (used.has(n)); used.add(n);
+      return { no: ri(1, 24), name: INIT[ri(0, INIT.length-1)] + '. ' + n, pos };
+    });
+    return { code, name, city, c1, c2, strength: 1 - i*0.07 + R()*0.12, roster, league: L };
+  });
+  L.matches = []; L.rounds = [];
+  const n = L.teams.length, idx = [...Array(n).keys()], single = [];
+  for (let r = 0; r < n-1; r++) {
+    const pairs = [];
+    for (let i = 0; i < n/2; i++) { let h = idx[i], a = idx[n-1-i]; if ((r+i) % 2) [h,a] = [a,h]; pairs.push([h,a]); }
+    single.push(pairs); idx.splice(1, 0, idx.pop());
+  }
+  const all = single.concat(single.map(p => p.map(([h,a]) => [a,h])));
+  all.forEach((pairs, r) => {
+    const day = new Date(Date.UTC(2025, 9, 4 + r*7 + (r >= 11 ? 14 : 0)));
+    const ids = [];
+    pairs.forEach(([h,a], k) => {
+      const home = L.teams[h], away = L.teams[a];
+      const [hh, mm] = L.kick[k % 2].split(':').map(Number);
+      const when = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + (k >= 2 ? 1 : 0), hh - L.off, mm));
+      const sets = playMatch(home.strength, away.strength);
+      const m = { id: L.matches.length, league: L, round: r, home, away, when, sets, attendance: ri(1800, 6200) };
+      m.hs = sets.filter(s => s[0] > s[1]).length; m.as = sets.length - m.hs;
+      L.matches.push(m); ids.push(m.id);
+    });
+    L.rounds.push(ids);
+  });
+  L.table = standings(L, L.rounds.length - 1);
+  L.posTrack = L.teams.map(t => L.rounds.map((_, r) => standings(L, r).findIndex(s => s.team === t) + 1));
+}
+
+function playSet(p, fifth) {
+  const target = fifth ? 15 : 25, homeWins = R() < p;
+  let w, l;
+  if (R() < 0.18) { w = target + ri(1, 5); l = w - 2; } else { w = target; l = fifth ? ri(6, 13) : ri(15, 23); }
+  return homeWins ? [w, l] : [l, w];
+}
+function playMatch(sh, sa) {
+  const p = clamp(0.5 + (sh - sa) * 0.9 + 0.04, 0.12, 0.88), sets = [];
+  let h = 0, a = 0;
+  while (h < 3 && a < 3) { const s = playSet(p, sets.length === 4); sets.push(s); s[0] > s[1] ? h++ : a++; }
+  return sets;
+}
+function standings(L, uptoRound) {
+  const rows = new Map(L.teams.map(t => [t, { team: t, p: 0, w: 0, l: 0, sw: 0, sl: 0, pw: 0, pl: 0, pts: 0, form: [] }]));
+  for (const m of L.matches) {
+    if (m.round > uptoRound) continue;
+    const H = rows.get(m.home), A = rows.get(m.away), hw = m.hs > m.as;
+    for (const [X, won, sw, sl] of [[H, hw, m.hs, m.as], [A, !hw, m.as, m.hs]]) {
+      X.p++; won ? X.w++ : X.l++; X.sw += sw; X.sl += sl;
+      X.pts += won ? (sl === 2 ? 2 : 3) : (sw === 2 ? 1 : 0);
+      X.form.push(won);
+    }
+    m.sets.forEach(([a, b]) => { H.pw += a; H.pl += b; A.pw += b; A.pl += a; });
+  }
+  return [...rows.values()].sort((x, y) => y.pts - x.pts || y.w - x.w || (y.sw / Math.max(1, y.sl)) - (x.sw / Math.max(1, x.sl)));
+}
+
+// Rally order for one set, used by the momentum charts (Poland publishes point-by-point; mocked here).
+function rallies(hs, as) {
+  const target = Math.max(hs, as) >= 25 ? 25 : 15;
+  const done = (x, y) => (x >= target || y >= target) && Math.abs(x - y) >= 2;
+  let h = 0, a = 0; const seq = [];
+  while (h < hs || a < as) {
+    const rh = hs - h, ra = as - a;
+    let gh = rh > 0 && (ra === 0 || R() < rh / (rh + ra));
+    const bad = g => { const nh = h + (g ? 1 : 0), na = a + (g ? 0 : 1); return done(nh, na) && !(nh === hs && na === as); };
+    if (bad(gh) && ((gh ? ra : rh) > 0) && !bad(!gh)) gh = !gh;
+    gh ? h++ : a++; seq.push(h - a);
+  }
+  return seq;
+}
+function boxScore(m) {
+  if (m.box) return m.box;
+  const sets = m.sets.length;
+  const side = (team, pts) => {
+    const oppErr = Math.round(pts * (0.2 + R() * 0.06));
+    let left = pts - oppErr;
+    const raw = SHARE.map(s => s * (0.75 + R() * 0.5)), sum = raw.reduce((a, b) => a + b, 0);
+    const rows = team.roster.map((p, i) => {
+      const pt = i === team.roster.length - 1 ? 0 : Math.round(left * raw[i] / sum);
+      const blk = Math.min(pt, Math.round(pt * (p.pos === 'MB' ? 0.32 : 0.08) * (0.6 + R() * 0.8)));
+      const ace = Math.min(pt - blk, Math.round(pt * 0.1 * R() * 1.6));
+      return { ...p, sets, pts: pt, atk: pt - blk - ace, ace, blk, err: p.pos === 'L' ? ri(0, 1) : p.pos === 'S' ? ri(0, 2) : ri(1, 7) };
+    });
+    return { rows, oppErr };
+  };
+  const hp = m.sets.reduce((a, s) => a + s[0], 0), ap = m.sets.reduce((a, s) => a + s[1], 0);
+  const H = side(m.home, hp), A = side(m.away, ap);
+  const winRows = m.hs > m.as ? H.rows : A.rows;
+  const mvp = winRows.reduce((b, r) => r.pts > b.pts ? r : b, winRows[0]);
+  m.box = { H, A, mvp, hp, ap, momentum: m.sets.map(([x, y]) => rallies(x, y)) };
+  return m.box;
+}
+
+const TRANSFERS = (() => {
+  const out = [], picks = [[0,0,1,2],[1,1,0,4],[2,3,3,1],[3,2,1,5],[0,4,2,0],[1,6,0,3],[3,0,0,6],[2,5,1,7]];
+  picks.forEach(([fl, ft, tl, tt], i) => {
+    const from = LEAGUES[fl].teams[ft], to = LEAGUES[tl].teams[tt], p = from.roster[[0, 2, 3, 1, 5, 0, 2, 4][i]];
+    out.push({ p, from, to, date: new Date(Date.UTC(2026, 5 + (i > 3 ? 1 : 0), 3 + i * 3)), type: i === 5 ? 'Loan' : 'Transfer' });
+  });
+  return out.sort((a, b) => b.date - a.date);
+})();
+
+// ---------- Shared helpers ----------
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const vars = t => `--c:${t.c1};--c2:${t.c2}`;
+const yourTime = d => d.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const leagueTime = (d, L) => d.toLocaleTimeString(undefined, { timeZone: L.tz, hour: '2-digit', minute: '2-digit' });
+const shortDate = d => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const isoDate = d => d.toISOString().slice(0, 10);
+const ratio = r => (r.sw / Math.max(1, r.sl)).toFixed(3);
+const leagueById = id => LEAGUES.find(L => L.id === id);
+
+// ---------- State and routing ----------
+const VARIANTS = [{ key: 'a', name: 'Broadcast' }, { key: 'b', name: 'Control room' }];
+const state = { v: 'a', page: 'home', league: null, match: null, round: null };
+try { const h = location.hash.slice(1); if (VARIANTS.some(v => v.key === h)) state.v = h; } catch (e) {}
+
+function go(page, leagueId, matchId) {
+  state.page = page;
+  state.league = leagueId ? leagueById(leagueId) : null;
+  state.match = state.league && matchId != null ? state.league.matches[matchId] : null;
+  if (page === 'league') state.round = state.league.rounds.length - 1;
+  render(); window.scrollTo(0, 0);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go]');
+  if (t) { const [p, l, m] = t.dataset.go.split(':'); go(p, l, m != null ? Number(m) : null); return; }
+  const r = e.target.closest('[data-round]');
+  if (r) { state.round = clamp(state.round + Number(r.dataset.round), 0, state.league.rounds.length - 1); render(); }
+});
+function setVariant(step) {
+  const i = (VARIANTS.findIndex(v => v.key === state.v) + step + VARIANTS.length) % VARIANTS.length;
+  state.v = VARIANTS[i].key;
+  try { history.replaceState(null, '', '#' + state.v); } catch (e) {}
+  render();
+}
+document.getElementById('prev').onclick = () => setVariant(-1);
+document.getElementById('next').onclick = () => setVariant(1);
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') setVariant(-1);
+  if (e.key === 'ArrowRight') setVariant(1);
+});
+
+// =====================================================================
+// Variant A: Broadcast
+// =====================================================================
+const A = {
+  badge: (t, s) => `<span class="badge" style="${vars(t)}${s ? ';--s:' + s + 'px' : ''}" title="Logo placeholder">${esc(t.code)}</span>`,
+  bug(m) {
+    const hw = m.hs > m.as;
+    return `<div class="fixture">
+      <button class="bug" data-go="match:${m.league.id}:${m.id}" aria-label="${esc(m.home.name)} ${m.hs}–${m.as} ${esc(m.away.name)}">
+        <span class="stripe" style="${vars(m.home)}"></span>
+        <span class="tm ${hw ? '' : 'lost'}">${A.badge(m.home, 26)}<span>${esc(m.home.name)}</span></span>
+        <span class="sc ${hw ? 'w' : ''}">${m.hs}</span>
+        <span class="mid">FT</span>
+        <span class="sc ${hw ? '' : 'w'}">${m.as}</span>
+        <span class="tm away ${hw ? 'lost' : ''}"><span>${esc(m.away.name)}</span>${A.badge(m.away, 26)}</span>
+        <span class="stripe" style="${vars(m.away)}"></span>
+      </button>
+      <div class="bugmeta"><span class="sets">${m.sets.map(([x, y]) => `<i>${x > y ? `<b>${x}</b>–${y}` : `${x}–<b>${y}</b>`}</i>`).join('')}</span>
+      <span>${esc(yourTime(m.when))}</span></div>
+    </div>`;
+  },
+  table(L, rows, mini) {
+    return `<div class="scroll"><table class="${mini ? 'mini' : ''}">
+      <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th>${mini ? '' : '<th>Sets</th><th>Ratio</th><th>Form</th>'}<th>Pts</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr class="${i < 4 && !mini ? 'top' : ''}">
+        <td class="pos" style="${vars(r.team)}">${i + 1}</td>
+        <td class="team"><button data-go="league:${L.id}">${A.badge(r.team, 22)}${esc(r.team.name)}</button></td>
+        <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
+        ${mini ? '' : `<td>${r.sw}:${r.sl}</td><td>${ratio(r)}</td><td><span class="form">${r.form.slice(-5).map(w => `<i class="${w ? 'w' : ''}"></i>`).join('')}</span></td>`}
+        <td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+  header() {
+    const cur = state.league;
+    return `<header>
+      <button class="mark" data-go="home">Courtside</button>
+      <nav aria-label="Leagues">${LEAGUES.map(L => `<button data-go="league:${L.id}" aria-current="${cur === L}">${esc(L.name)}</button>`).join('')}</nav>
+      <div class="season">Season <b>2025-26</b> · Regular season</div>
+    </header>`;
+  },
+  home() {
+    return `${A.header()}
+    <div class="cols">
+      <div class="stack">${LEAGUES.map(L => `<section>
+          <h2>${esc(L.name)} · Round ${L.rounds.length}</h2>
+          ${L.rounds[L.rounds.length - 1].map(id => A.bug(L.matches[id])).join('')}
+        </section>`).join('')}</div>
+      <div class="stack">
+        ${LEAGUES.map(L => `<section>
+          <div class="minihead"><h2>${esc(L.name)}</h2><button class="link" data-go="league:${L.id}">Full table</button></div>
+          ${A.table(L, L.table.slice(0, 4), true)}
+        </section>`).join('')}
+      </div>
+    </div>
+    <section style="margin-top:36px">
+      <h2>Summer 2026 transfers</h2>
+      <div class="transfers">${TRANSFERS.map(t => `<div class="tr">
+        <div class="who">${esc(t.p.name)} <small>${t.p.pos} · ${t.type}</small></div>
+        <div class="path"><span>${A.badge(t.from, 24)}${esc(t.from.code)}</span><i class="arrow"></i><span>${esc(t.to.code)}${A.badge(t.to, 24)}</span></div>
+        <div class="when">${esc(t.from.league.name)} → ${esc(t.to.league.name)} · ${esc(shortDate(t.date))}</div>
+      </div>`).join('')}</div>
+    </section>`;
+  },
+  league(L) {
+    const r = state.round, ids = L.rounds[r];
+    return `${A.header()}
+    <div class="hero"><div><h1>${esc(L.name)}</h1><p>${esc(L.country)} · Men · 2025-26 regular season</p></div></div>
+    <div class="cols">
+      <section><h2>Standings after round ${L.rounds.length}</h2>${A.table(L, L.table, false)}
+        <p class="note">Top four shown in colour. Win 3–0 or 3–1 earns 3 points, 3–2 earns 2, a 2–3 loss earns 1.</p></section>
+      <section>
+        <div class="minihead"><h2>Results</h2>
+          <div class="roundsw"><button data-round="-1" ${r === 0 ? 'disabled' : ''} aria-label="Previous round">‹</button><span>Round ${r + 1}</span><button data-round="1" ${r === L.rounds.length - 1 ? 'disabled' : ''} aria-label="Next round">›</button></div></div>
+        ${ids.map(id => A.bug(L.matches[id])).join('')}
+      </section>
+    </div>`;
+  },
+  match(m) {
+    const L = m.league, b = boxScore(m), hw = m.hs > m.as;
+    const boxT = (team, side, isHome) => `<section><h2>${esc(team.name)}</h2><div class="scroll"><table class="box">
+      <thead><tr><th>No</th><th>Player</th><th>Pos</th><th>Sets</th><th>Pts</th><th>Atk</th><th>Ace</th><th>Blk</th><th>Err</th></tr></thead>
+      <tbody>${side.rows.map(p => `<tr><td class="no" style="${vars(team)}">${p.no}</td><td class="pl">${esc(p.name)}</td><td>${p.pos}</td><td>${p.sets}</td><td class="hi">${p.pts}</td><td>${p.atk}</td><td>${p.ace}</td><td>${p.blk}</td><td>${p.err}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td></td><td class="pl">Opponent errors</td><td></td><td></td><td>${side.oppErr}</td><td colspan="4"></td></tr></tfoot>
+    </table></div></section>`;
+    return `${A.header()}
+    <div class="board">
+      <div class="side" style="${vars(m.home)}">${A.badge(m.home, 64)}<div><h3>${esc(m.home.name)}</h3><p>${esc(m.home.city)}</p></div></div>
+      <div class="big"><b class="${hw ? 'w' : 'l'}">${m.hs}</b><i></i><b class="${hw ? 'l' : 'w'}">${m.as}</b></div>
+      <div class="side away" style="${vars(m.away)}">${A.badge(m.away, 64)}<div><h3>${esc(m.away.name)}</h3><p>${esc(m.away.city)}</p></div></div>
+    </div>
+    <div class="setrow" style="--n:${m.sets.length}"><span class="pad"></span>${m.sets.map(([x, y], i) => `<div><small>SET ${i + 1}</small><span class="${x > y ? '' : 'lo'}">${x}</span><span class="${y > x ? '' : 'lo'}">${y}</span></div>`).join('')}<span class="pad"></span></div>
+    <div class="meta">
+      <span>${esc(L.name)} · Round <b>${m.round + 1}</b></span>
+      <span><b>${esc(yourTime(m.when))}</b> your time · ${esc(leagueTime(m.when, L))} in ${esc(L.city)}</span>
+      <span>Venue <b>${esc(m.home.city)}</b></span>
+      <span>Attendance <b>${m.attendance.toLocaleString()}</b></span>
+      <span>Points <b>${b.hp}–${b.ap}</b></span>
+    </div>
+    <div class="mvp"><small>MVP</small><b>${esc(b.mvp.name)}</b><span>${b.mvp.pts} pts</span></div>
+    <div class="boxes">${boxT(m.home, b.H)}${boxT(m.away, b.A)}</div>
+    <p class="note">Box score shows the shared core every League maps onto. League-specific columns (reception, efficiency) would follow below.</p>`;
+  },
+};
+
+// =====================================================================
+// Variant B: Control room
+// =====================================================================
+const B = {
+  code: t => `<span class="code" style="${vars(t)}">${esc(t.code)}</span>`,
+  heat(m) {
+    return `<span class="heat">${m.sets.map(([x, y]) => {
+      const k = Math.round(clamp(Math.abs(x - y) / 10, 0.25, 1) * 85);
+      return `<i class="${x > y ? 'h' : 'a'}" style="--k:${k}%">${x}-${y}</i>`;
+    }).join('')}</span>`;
+  },
+  res(m) {
+    const hw = m.hs > m.as;
+    return `<button class="res" data-go="match:${m.league.id}:${m.id}">
+      ${B.code(m.home)}<span class="s ${hw ? 'w' : ''}">${m.hs}</span>${B.code(m.away)}<span style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0"><span class="s ${hw ? '' : 'w'}" style="margin-right:auto">${m.as}</span>${B.heat(m)}</span>
+    </button>`;
+  },
+  table(L, rows) {
+    return `<div class="scroll"><table>
+      <thead><tr><th class="l">#</th><th class="l">Team</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>SR</th><th>Pts</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr class="${i === 3 ? 'cut' : ''}"><td class="l">${String(i + 1).padStart(2, '0')}</td>
+        <td class="tm"><button data-go="league:${L.id}"><span class="chip" style="${vars(r.team)}"></span>${esc(r.team.name)}</button></td>
+        <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td><td>${r.sw}:${r.sl}</td><td>${ratio(r)}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+  shell(inner) {
+    const cur = state.league;
+    return `<div class="shell">
+      <aside>
+        <button class="mark" data-go="home"><i></i>Courtside</button>
+        <div class="rail">
+          <button data-go="home" aria-current="${state.page === 'home'}"><b>ALL</b><span>Overview</span></button>
+          ${LEAGUES.map(L => `<button data-go="league:${L.id}" aria-current="${cur === L}"><b>${L.cc}</b><span>${esc(L.name)}</span></button>`).join('')}
+          <button class="off" disabled title="Out of the MVP"><b>TUR</b><span>Efeler Ligi</span></button>
+        </div>
+        <div class="railnote">Season 2025-26<br>Men · regular season<br>Times in your time zone</div>
+      </aside>
+      <main>${inner}</main></div>`;
+  },
+  legend: () => `<div class="legend"><span><i style="background:var(--b-amber)"></i>home won set</span><span><i style="background:var(--b-cyan)"></i>away won set</span><span>stronger colour = wider margin</span></div>`,
+  home() {
+    return B.shell(`
+      <div class="topline"><h1>Overview</h1><span>4 leagues · ${LEAGUES.reduce((a, L) => a + L.matches.length, 0)} matches</span><span class="live">● season complete</span></div>
+      <div class="grid">
+        ${LEAGUES.map(L => `<div class="panel">
+          <h3><button data-go="league:${L.id}">${L.cc} · ${esc(L.name)}</button><span class="tag">R${L.rounds.length} · final</span></h3>
+          <div class="pbody">${B.table(L, L.table)}
+            <div style="margin-top:10px">${L.rounds[L.rounds.length - 1].map(id => B.res(L.matches[id])).join('')}</div>
+          </div></div>`).join('')}
+        <div class="panel span2"><h3><span>Transfer log · summer 2026</span><span class="tag">${TRANSFERS.length} entries</span></h3>
+          <div class="pbody log">${TRANSFERS.map(t => `<div>
+            <span class="dim">${isoDate(t.date)}</span><span class="dim">${t.p.pos}</span><span>${esc(t.p.name)}</span>
+            <span class="mv">${B.code(t.from)}<span class="dim">→</span>${B.code(t.to)}<span class="dim">${esc(t.from.league.cc)} → ${esc(t.to.league.cc)}</span></span>
+            <span class="ty">${t.type}</span></div>`).join('')}</div></div>
+      </div>
+      ${B.legend()}`);
+  },
+  bump(L) {
+    const W = 640, H = 230, padL = 34, padR = 44, padT = 12, padB = 24, n = L.teams.length, rounds = L.rounds.length;
+    const x = r => padL + r * (W - padL - padR) / (rounds - 1), y = p => padT + (p - 1) * (H - padT - padB) / (n - 1);
+    const lines = L.teams.map((t, i) => {
+      const pts = L.posTrack[i].map((p, r) => `${x(r).toFixed(1)},${y(p).toFixed(1)}`).join(' ');
+      const last = L.posTrack[i][rounds - 1];
+      return `<g><polyline points="${pts}" fill="none" stroke="${t.c1}" stroke-width="2.2" stroke-linejoin="round" opacity=".9"/>
+        <text x="${x(rounds - 1) + 8}" y="${y(last) + 4}" font-size="11" fill="var(--b-fg)">${esc(t.code)}</text></g>`;
+    }).join('');
+    const ticks = Array.from({ length: n }, (_, i) => `<text x="${padL - 10}" y="${y(i + 1) + 4}" font-size="10" text-anchor="end" fill="var(--b-dim)">${i + 1}</text>
+      <line x1="${padL}" x2="${W - padR}" y1="${y(i + 1)}" y2="${y(i + 1)}" stroke="var(--b-line)" stroke-width=".6"/>`).join('');
+    const rt = [0, 6, 13].map(r => `<text x="${x(r)}" y="${H - 6}" font-size="10" text-anchor="middle" fill="var(--b-dim)">R${r + 1}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Table position by round">${ticks}${rt}${lines}</svg>`;
+  },
+  cross(L) {
+    const ts = L.teams;
+    const cell = (h, a) => {
+      if (h === a) return `<td class="self"></td>`;
+      const m = L.matches.find(m => m.home === h && m.away === a);
+      return `<td><button class="${m.hs > m.as ? 'hw' : 'aw'}" data-go="match:${L.id}:${m.id}" title="${esc(h.name)} v ${esc(a.name)}">${m.hs}:${m.as}</button></td>`;
+    };
+    return `<div class="scroll"><table class="cross"><thead><tr><th class="rowh">home ↓ away →</th>${ts.map(t => `<th>${B.code(t)}</th>`).join('')}</tr></thead>
+      <tbody>${ts.map(h => `<tr><th class="rowh">${B.code(h)}</th>${ts.map(a => cell(h, a)).join('')}</tr>`).join('')}</tbody></table></div>`;
+  },
+  league(L) {
+    return B.shell(`
+      <div class="topline"><h1>${esc(L.name)}</h1><span>${esc(L.country)} · men · 2025-26</span><span>${L.matches.length} matches · ${L.rounds.length} rounds</span></div>
+      <div class="grid">
+        <div class="panel"><h3><span>Standings</span><span class="tag">final</span></h3><div class="pbody">${B.table(L, L.table)}</div></div>
+        <div class="panel"><h3><span>Position by round</span></h3><div class="pbody">${B.bump(L)}</div></div>
+        <div class="panel span2"><h3><span>Results grid</span><span>click a cell for the match</span></h3><div class="pbody">${B.cross(L)}${B.legend()}</div></div>
+      </div>`);
+  },
+  momentum(seq, [x, y], i, m) {
+    const W = 300, H = 90, mid = H / 2, max = Math.max(5, ...seq.map(Math.abs)), sx = W / seq.length, sy = (mid - 6) / max;
+    let d = `M0 ${mid}`; seq.forEach((v, k) => { d += ` L${((k + 1) * sx).toFixed(1)} ${(mid - v * sy).toFixed(1)}`; });
+    const area = d + ` L${W} ${mid} Z`;
+    return `<div class="setcard"><h4><span>Set ${i + 1}</span><b>${x}–${y}</b></h4>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Set ${i + 1} lead by rally">
+        <defs><clipPath id="up${m.id}-${i}"><rect x="0" y="0" width="${W}" height="${mid}"/></clipPath><clipPath id="dn${m.id}-${i}"><rect x="0" y="${mid}" width="${W}" height="${mid}"/></clipPath></defs>
+        <path d="${area}" fill="var(--b-amber)" opacity=".35" clip-path="url(#up${m.id}-${i})"/>
+        <path d="${area}" fill="var(--b-cyan)" opacity=".35" clip-path="url(#dn${m.id}-${i})"/>
+        <line x1="0" x2="${W}" y1="${mid}" y2="${mid}" stroke="var(--b-line)"/>
+        <path d="${d}" fill="none" stroke="var(--b-fg)" stroke-width="1.4"/>
+        <text x="4" y="12" font-size="9" fill="var(--b-amber)">${esc(m.home.code)} ahead</text>
+        <text x="4" y="${H - 4}" font-size="9" fill="var(--b-cyan)">${esc(m.away.code)} ahead</text>
+      </svg></div>`;
+  },
+  match(m) {
+    const L = m.league, b = boxScore(m), hw = m.hs > m.as;
+    const rows = (team, side) => side.rows.map(p => `<tr class="${p === b.mvp ? 'mvp' : ''}"><td class="l">${String(p.no).padStart(2, '0')}</td><td class="pl">${esc(p.name)}${p === b.mvp ? ' ★' : ''}</td><td class="l">${p.pos}</td><td>${p.sets}</td><td class="pts">${p.pts}</td><td>${p.atk}</td><td>${p.ace}</td><td>${p.blk}</td><td>${p.err}</td></tr>`).join('');
+    return B.shell(`
+      <div class="topline"><button class="back" data-go="league:${L.id}">← ${esc(L.name)}</button><span>Round ${m.round + 1}</span></div>
+      <div class="grid">
+        <div class="panel span2">
+          <div class="mhead">
+            <div class="t">${B.code(m.home)}<span>${esc(m.home.name)}</span></div>
+            <div class="sc"><span class="${hw ? 'w' : 'l'}">${m.hs}</span><span class="l">:</span><span class="${hw ? 'l' : 'w'}">${m.as}</span></div>
+            <div class="t away"><span>${esc(m.away.name)}</span>${B.code(m.away)}</div>
+          </div>
+          <div class="facts">
+            <span><b>${esc(yourTime(m.when))}</b> your time</span><span>${esc(leagueTime(m.when, L))} in ${esc(L.city)}</span>
+            <span>venue <b>${esc(m.home.city)}</b></span><span>att. <b>${m.attendance.toLocaleString()}</b></span>
+            <span>points <b>${b.hp}–${b.ap}</b></span><span>MVP <b>${esc(b.mvp.name)}</b></span>
+          </div>
+        </div>
+        <div class="panel span2"><h3><span>Lead by rally, per set</span><span>above the line: ${esc(m.home.code)} ahead</span></h3>
+          <div class="pbody sets">${b.momentum.map((seq, i) => B.momentum(seq, m.sets[i], i, m)).join('')}</div></div>
+        <div class="panel span2"><h3><span>Box score</span><span>shared core · league-specific columns would follow</span></h3>
+          <div class="pbody scroll box"><table>
+            <thead><tr><th class="l">No</th><th class="l">Player</th><th class="l">Pos</th><th>Sets</th><th>Pts</th><th>Atk</th><th>Ace</th><th>Blk</th><th>Err</th></tr></thead>
+            <tbody><tr class="sep"><td colspan="9">${esc(m.home.name)}</td></tr>${rows(m.home, b.H)}
+                   <tr class="sep"><td colspan="9">${esc(m.away.name)}</td></tr>${rows(m.away, b.A)}</tbody>
+          </table></div></div>
+      </div>`);
+  },
+};
+
+// ---------- Render ----------
+function render() {
+  const V = state.v === 'a' ? A : B;
+  document.body.className = 'v' + state.v;
+  let html;
+  if (state.page === 'match') html = V.match(state.match);
+  else if (state.page === 'league') html = V.league(state.league);
+  else html = V.home();
+  document.getElementById('app').innerHTML = state.v === 'a' ? `<div class="wrap">${html}</div>` : html;
+  const v = VARIANTS.find(v => v.key === state.v);
+  document.getElementById('vlabel').innerHTML = `${v.key.toUpperCase()} · ${v.name} <small>· ${state.page}</small>`;
+}
+render();
+</script>
