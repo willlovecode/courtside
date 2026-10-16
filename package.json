@@ -14,7 +14,8 @@
     "test": "vitest run",
     "check": "npm run lint && npm run typecheck && npm run test",
     "scrape": "npm run scrape --workspace @courtside/scrapers --",
-    "db:push": "npm run db:push --workspace @courtside/db"
+    "db:push": "npm run db:push --workspace @courtside/db",
+    "db:generate": "npm run db:generate --workspace @courtside/db"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

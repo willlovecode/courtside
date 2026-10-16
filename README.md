@@ -55,6 +55,16 @@ Every mapping of a League's columns onto the shared Box score core is tested aga
 
 Runs start by hand from the command line while we work on the finished 2025-26 Season. Scheduled GitHub Actions runs, which open an issue when a check fails, come with the live Season. Parsers are tested with Vitest against a few real pages per page type committed to the repo.
 
+## Development
+
+Node 24 and npm. `npm install` sets up the workspaces: `packages/db` (Drizzle schema and client) and `packages/scrapers` (League adapters and the CLI). The web app is not scaffolded yet.
+
+- `npm run check`: ESLint, `tsc --noEmit` in every workspace, then Vitest.
+- `npm run scrape -- --league plusliga --season 2025-26 [--step fetch|parse|load|check|all] [--refresh]`: runs the four scraper steps (default `all`). Pages that already have a snapshot are skipped unless `--refresh` is given. The Season also brings the 2026-27 Rosters.
+- `npm run db:push`: applies the SQL migrations in `packages/db/drizzle`. Scrape runs do this themselves. After editing `packages/db/src/schema.ts`, run `npm run db:generate` to write a new migration.
+
+Local data lives in `.data/` (git-ignored): raw pages in `.data/snapshots/<league>/<season>/<page-kind>/<id>.html` with a `.json` sidecar (URL, fetch time, status), parse output in `.data/parsed/`, and the PGlite database in `.data/pglite/`. Setting `DATABASE_URL` to a Postgres (Neon) connection string loads there instead.
+
 ## MVP is done when
 
 - The site is live on a `*.vercel.app` address.
