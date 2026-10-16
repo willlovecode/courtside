@@ -1,14 +1,14 @@
 import type { PoliteFetcher } from "../fetcher";
-import type { SnapshotStore } from "../snapshots";
+import type { SnapshotKey, SnapshotStore } from "../snapshots";
 import { pageKinds, urls } from "./config";
 import { matchIdsOnList, playerIdsOnMatchPage, playerIdsOnTeamPage } from "./discover";
 import { seasonPlans, tourOf } from "./seasons";
-import { requirePage, snapshotKey } from "./snapshots";
+import { readPage, requirePage, snapshotKey } from "./snapshots";
 import { parseTeamIndex } from "./teamPage";
 
 interface FetchContext {
   store: SnapshotStore;
-  fetcher: PoliteFetcher;
+  fetcher: Pick<PoliteFetcher, "fetchPage">;
   log: (message: string) => void;
 }
 
@@ -33,14 +33,16 @@ export async function fetchPlusLiga(ctx: FetchContext, season: string): Promise<
 
   const rosterPlayers = new Map<string, { season: string; tour: number }>();
   for (const teamId of teamIds) {
-    const html = await requirePage(store, snapshotKey(season, pageKinds.team, teamId));
+    const html = await usablePage(ctx, snapshotKey(season, pageKinds.team, teamId));
+    if (html === null) continue;
     for (const id of playerIdsOnTeamPage(html)) rosterPlayers.set(id, { season, tour: mainTour });
   }
   for (const rosterSeason of plan.rosterSeasons) {
     const tour = await tourOf(store, rosterSeason);
     await fetcher.fetchPage(snapshotKey(rosterSeason, pageKinds.teamIndex, "index"), urls.teamIndex(tour));
     for (const teamId of await fetchTeamPages(ctx, rosterSeason, tour)) {
-      const html = await requirePage(store, snapshotKey(rosterSeason, pageKinds.team, teamId));
+      const html = await usablePage(ctx, snapshotKey(rosterSeason, pageKinds.team, teamId));
+      if (html === null) continue;
       for (const id of playerIdsOnTeamPage(html)) {
         if (!rosterPlayers.has(id)) rosterPlayers.set(id, { season: rosterSeason, tour });
       }
@@ -56,7 +58,8 @@ export async function fetchPlusLiga(ctx: FetchContext, season: string): Promise<
 
   // An MVP can be a Player who is on no Roster, e.g. after leaving the League.
   for (const matchId of matchIds) {
-    const html = await requirePage(store, snapshotKey(season, pageKinds.match, matchId));
+    const html = await usablePage(ctx, snapshotKey(season, pageKinds.match, matchId));
+    if (html === null) continue;
     for (const id of playerIdsOnMatchPage(html)) {
       if (!rosterPlayers.has(id)) rosterPlayers.set(id, { season, tour: mainTour });
     }
@@ -66,6 +69,13 @@ export async function fetchPlusLiga(ctx: FetchContext, season: string): Promise<
   for (const [playerId, where] of rosterPlayers) {
     await fetcher.fetchPage(snapshotKey(where.season, pageKinds.player, playerId), urls.player(where.tour, playerId));
   }
+}
+
+/** A page we can read links from; one the site refused to serve is skipped with a warning and retried on the next run. */
+async function usablePage(ctx: FetchContext, key: SnapshotKey): Promise<string | null> {
+  const html = await readPage(ctx.store, key);
+  if (html === null) ctx.log(`warning: no usable snapshot for ${key.kind}/${key.id} in ${key.season}, skipping it`);
+  return html;
 }
 
 async function fetchTeamPages(ctx: FetchContext, season: string, tour: number): Promise<string[]> {

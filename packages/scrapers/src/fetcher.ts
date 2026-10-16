@@ -45,7 +45,8 @@ export class PoliteFetcher {
   async fetchPage(key: SnapshotKey, url: string): Promise<FetchOutcome> {
     if (!this.options.refresh) {
       const existing = await this.options.store.get(key);
-      if (existing && existing.meta.status < 500) return "skipped";
+      // Only a page we actually got counts as done; a 404 or 5xx snapshot is asked for again.
+      if (existing && existing.meta.status >= 200 && existing.meta.status < 300) return "skipped";
     }
 
     let response = await this.request(url).catch((error: unknown) => error as Error);

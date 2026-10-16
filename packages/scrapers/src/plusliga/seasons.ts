@@ -1,6 +1,6 @@
 import type { SnapshotStore } from "../snapshots";
 import { knownTours, pageKinds, seasonLabelOnSite } from "./config";
-import { requirePage, snapshotKey } from "./snapshots";
+import { readPage, requirePage, snapshotKey } from "./snapshots";
 import { parseSeasonLinks, parseTeamIndex } from "./teamPage";
 
 /** What `--season 2025-26` brings in: that Season in full, and the Rosters of the next one. */
@@ -19,11 +19,14 @@ export async function tourOf(store: SnapshotStore, season: string): Promise<numb
   if (known !== undefined) return known;
 
   const indexHtml = await requirePage(store, snapshotKey(anchorSeason, pageKinds.teamIndex, "index"));
-  const [anyTeamId] = parseTeamIndex(indexHtml);
-  if (!anyTeamId) throw new Error(`No teams on the ${anchorSeason} team overview`);
-  const teamHtml = await requirePage(store, snapshotKey(anchorSeason, pageKinds.team, anyTeamId));
   const wanted = seasonLabelOnSite(season);
-  const link = parseSeasonLinks(teamHtml).find((l) => l.label === wanted);
-  if (!link) throw new Error(`The Season selector has no "${wanted}"`);
-  return link.tour;
+  // Any team page will do; skip the ones the site did not serve.
+  for (const teamId of parseTeamIndex(indexHtml)) {
+    const teamHtml = await readPage(store, snapshotKey(anchorSeason, pageKinds.team, teamId));
+    if (teamHtml === null) continue;
+    const link = parseSeasonLinks(teamHtml).find((l) => l.label === wanted);
+    if (!link) throw new Error(`The Season selector has no "${wanted}"`);
+    return link.tour;
+  }
+  throw new Error(`No usable ${anchorSeason} team page to read the Season selector from`);
 }

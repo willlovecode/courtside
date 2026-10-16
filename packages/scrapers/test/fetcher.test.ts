@@ -81,10 +81,12 @@ describe("PoliteFetcher", () => {
     expect(await store.get(key("1"))).toBeNull();
   });
 
-  it("keeps a 404 as a snapshot so it is not asked for again", async () => {
-    const { fetcher, store, key } = setup([404]);
+  it("keeps a 404 as a snapshot but asks again on the next run", async () => {
+    const { fetcher, store, calls, key } = setup([404, 200]);
     await fetcher.fetchPage(key("1"), "https://example.test/a");
     expect((await store.get(key("1")))?.meta.status).toBe(404);
-    expect(await fetcher.fetchPage(key("1"), "https://example.test/a")).toBe("skipped");
+    expect(await fetcher.fetchPage(key("1"), "https://example.test/a")).toBe("fetched");
+    expect(calls).toHaveLength(2);
+    expect((await store.get(key("1")))?.meta.status).toBe(200);
   });
 });
