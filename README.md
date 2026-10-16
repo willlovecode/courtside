@@ -10,6 +10,20 @@ Independent, non-commercial fan project. All data comes from the leagues' offici
 - No second divisions, cups or European competitions yet.
 - Site language is English.
 - No live scores yet: data refreshes a few times a day.
+- The first build covers the finished 2025-26 Season; the current Season follows once the pipeline works.
+
+## Pages
+
+- **Home:** recent results and next matches across all Leagues, a mini table per League, latest Transfers.
+- **Match:** Teams, time, venue, result and set scores everywhere; box score and MVP where the League publishes them.
+- **Player:** position, height, date of birth, nationality, current Team, Season stats where published, Transfer history. Portraits only from FIVB VIS, initials otherwise.
+- Stats are shown within their own League only; no cross-League leaderboards until definitions are confirmed to match.
+- Times are shown in the viewer's time zone, with League-local time alongside.
+- URLs use lasting names, never sponsor names: `/leagues/superlega/2025-26`, `/clubs/trentino-volley`, `/players/kamil-semeniuk`, `/matches/<date>-<home>-<away>`.
+
+Look: dark broadcast scoreboard. Dense, monospace figures, TV-graphic feel.
+
+Stack: TypeScript monorepo (Next.js site, scrapers and a shared Drizzle schema), Neon Postgres, Vercel, GitHub Actions for scheduled runs.
 
 ## Order of work
 
