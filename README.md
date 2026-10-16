@@ -21,7 +21,7 @@ Independent, non-commercial fan project. All data comes from the leagues' offici
 - Times are shown in the viewer's time zone, with League-local time alongside.
 - URLs use lasting names, never sponsor names: `/leagues/superlega/2025-26`, `/clubs/trentino-volley`, `/players/kamil-semeniuk`, `/matches/<date>-<home>-<away>`.
 
-Look: dark broadcast scoreboard. Dense, monospace figures, TV-graphic feel.
+Look: "control room", chosen from a two-variant prototype (branch `prototype/broadcast-ui`, `prototype/ui-variants.html`, variant B). Dark only: graphite background, LED amber for home and highlights, cyan for away, IBM Plex Mono for figures and IBM Plex Sans Condensed for names. A league rail on the left, dense bordered panels, set scores as cells shaded by margin, a results grid per League, a position-by-round chart, per-set lead-by-rally charts on the Match page, and one combined box score.
 
 Stack: TypeScript monorepo (Next.js site, scrapers and a shared Drizzle schema), Neon Postgres, Vercel, GitHub Actions for scheduled runs.
 
