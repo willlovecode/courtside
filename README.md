@@ -1,10 +1,39 @@
 # Courtside
 
-A portfolio website for current professional volleyball: leagues, matches, standings, clubs, players and transfers, presented with care.
+A website for professional men's volleyball: leagues, matches, standings, clubs, players and transfers across five national leagues, built from the leagues' own official websites.
 
-Independent, non-commercial fan project. All data comes from the leagues' official websites, which each page links back to.
+Independent, non-commercial fan project. Every page links back to the official source.
 
-## Scope
+## Status
+
+Work in progress. The data pipeline comes first, the site second.
+
+- **Working:** the PlusLiga (Poland) scraper for the 2025-26 Season: fetch, parse, load into Postgres and plausibility checks.
+- **Next:** Italy, Japan and Germany adapters, then the Next.js site.
+- The look is settled in a clickable prototype on branch `prototype/broadcast-ui`.
+
+## Highlights
+
+- **Fetch and parse are separate.** Raw pages are stored as snapshots and parsers never touch the network, so a fixed parser re-runs over stored pages without hitting the leagues' sites again.
+- **Data is checked, not trusted.** Every load runs rules such as "a finished Match has 3 to 5 valid sets" and "every Team has a Roster of at least 12 Players".
+- **One model, many leagues.** Each League maps its own columns onto a shared core, and every mapping is tested against a real page.
+- **Decisions are written down:** ADRs in `docs/adr/`, the domain language in `GLOSSARY.md`.
+
+## Quick start
+
+Requires Node 24 and npm.
+
+```bash
+npm install
+npm run check
+npm run scrape -- --league plusliga --season 2025-26
+```
+
+`check` runs lint, types and tests. No database setup is needed: without `DATABASE_URL`, data loads into a local PGlite database in `.data/`.
+
+## Plan
+
+### Scope
 
 - Men's top divisions of Germany (1. Bundesliga), Italy (SuperLega), Poland (PlusLiga, sponsored as TAURON Liga), Turkey (Efeler Ligi) and Japan (SV.League). Women's leagues come later.
 - No second divisions, cups or European competitions yet.
@@ -12,7 +41,7 @@ Independent, non-commercial fan project. All data comes from the leagues' offici
 - No live scores yet: data refreshes a few times a day.
 - The first build covers the finished 2025-26 Season; the current Season follows once the pipeline works.
 
-## Pages
+### Pages
 
 - **Home:** recent results and next matches across all Leagues, a mini table per League, latest Transfers.
 - **Match:** Teams, time, venue, result and set scores everywhere; box score and MVP where the League publishes them.
@@ -25,7 +54,7 @@ Look: "control room", chosen from a two-variant prototype (branch `prototype/bro
 
 Stack: TypeScript monorepo (Next.js site, scrapers and a shared Drizzle schema), Neon Postgres, Vercel, GitHub Actions for scheduled runs.
 
-## Order of work
+### Order of work
 
 1. Throwaway clickable prototype of Home, League and Match pages on mock data, to settle the look. Reference: Volleyball World's VNL broadcast graphics; two variants.
 2. League scrapers in this order: Poland, Italy, Japan, Germany, Turkey. The 2025-26 Season in full, plus 2026-27 Rosters.
